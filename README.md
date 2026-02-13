@@ -30,3 +30,13 @@ Un bot Telegram scritto in **Python**, pensato per girare anche in **Termux** su
 
    ```text
    /newbot
+4.Scegli un nome per il bot (es. Tech News Bot).
+   Scegli un username che termini con bot (es. tech_news_bot).
+
+5. BotFather ti fornirà un TOKEN simile a:   
+   1234567890:ABCdefGHIjkLMNopQRstuVWxyz
+   
+7. Inserisci il token nel file bot.py:
+   TOKEN = "INSERISCI_IL_TUO_TOKEN_TELEGRAM"
+   oppure esportalo come variabile d'ambiente:
+   export TELEGRAM_BOT_TOKEN="1234567890:ABCdefGHIjkLMNo

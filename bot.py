@@ -1,6 +1,7 @@
 import os
 import feedparser
-from telegram.ext import ApplicationBuilder, CommandHandler
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler
 
 # Puoi usare una variabile d'ambiente oppure scrivere il token in chiaro
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "INSERISCI_IL_TUO_TOKEN_TELEGRAM")
@@ -17,15 +18,23 @@ FEEDS = [
 
 
 async def start(update, context):
+    # Crea il pulsante inline che chiama tech
+    keyboard = [
+        [InlineKeyboardButton("📰 Ultime Notizie Tech", callback_data="get_tech")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
     await update.message.reply_text(
         "Ciao! 👋\n"
         "Sono il tuo bot per le notizie tech italiane.\n"
-        "Usa /tech per vedere le ultime novità."
+        "Clicca il pulsante sotto per vedere le ultime novità!",
+        reply_markup=reply_markup
     )
 
 
 async def tech(update, context):
-    await update.message.reply_text("🔍 Recupero le ultime notizie tech italiane...")
+    # Usa effective_message per funzionare sia con comandi che con callback
+    await update.effective_message.reply_text("🔍 Recupero le ultime notizie tech italiane...")
 
     news_list = []
 
@@ -37,12 +46,28 @@ async def tech(update, context):
             news_list.append(f"• {title}\n{link}")
 
     if not news_list:
-        await update.message.reply_text("Nessuna notizia trovata al momento.")
+        await update.effective_message.reply_text("Nessuna notizia trovata al momento.")
         return
 
     # Limitiamo il numero totale di notizie
     risposta = "\n\n".join(news_list[:15])
-    await update.message.reply_text("📰 Ecco le ultime news:\n\n" + risposta)
+    
+    # Crea il pulsante anche nel messaggio delle notizie
+    keyboard = [
+        [InlineKeyboardButton("🔄 Ricerca di nuovo", callback_data="get_tech")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await update.effective_message.reply_text("📰 Ecco le ultime news:\n\n" + risposta, reply_markup=reply_markup)
+
+
+async def tech_button_callback(update, context):
+    """Gestisce il click del pulsante e chiama la funzione tech"""
+    query = update.callback_query
+    await query.answer()  # Chiude la notifica di caricamento
+    
+    # Chiama direttamente la funzione tech
+    await tech(update, context)
 
 
 def main():
@@ -53,6 +78,7 @@ def main():
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("tech", tech))
+    app.add_handler(CallbackQueryHandler(tech_button_callback, pattern="get_tech"))
 
     app.run_polling()
 

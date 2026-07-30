@@ -1,4 +1,5 @@
 import os
+import asyncio
 import feedparser
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler
@@ -47,6 +48,12 @@ async def tech(update, context):
 
     if not news_list:
         await update.effective_message.reply_text("Nessuna notizia trovata al momento.")
+        # Arresta l'applicazione subito dopo aver risposto
+        await asyncio.sleep(0.3)
+        try:
+            await context.application.stop()
+        except TypeError:
+            context.application.stop()
         return
 
     # Limitiamo il numero totale di notizie
@@ -59,6 +66,13 @@ async def tech(update, context):
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     await update.effective_message.reply_text("📰 Ecco le ultime news:\n\n" + risposta, reply_markup=reply_markup)
+
+    # Dopo aver inviato le notizie, fermiamo l'applicazione per "auto-distruzione"
+    await asyncio.sleep(0.5)  # piccolo ritardo per essere sicuri che i messaggi siano inviati
+    try:
+        await context.application.stop()
+    except TypeError:
+        context.application.stop()
 
 
 async def tech_button_callback(update, context):

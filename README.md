@@ -1,105 +1,131 @@
-# 📡 Telegram Tech News Bot
+## Installazione e uso di llama.cpp e modelli quantizzati su Termux
 
-Un bot Telegram scritto in **Python**, pensato per girare anche in **Termux** su Android, che recupera le ultime notizie tecnologiche da fonti italiane come **HDblog, SmartWorld, Hardware Upgrade, Tom's HW, Everyeye e Wired**.
+Questa sezione spiega come compilare llama.cpp su Termux, scaricare un modello ggml/gguf quantizzato e configurare il bot per usare il modello locale per i riassunti.
 
----
+ATTENZIONE: il download di alcuni modelli può richiedere l'accesso a Hugging Face e l'accettazione di licenze. Verifica sempre i termini d'uso.
 
-## 🚀 Funzionalità
+Requisiti minimi consigliati
+- Android con Termux
+- Almeno 4 GB di RAM (la procedura mira a usare modelli da ~2-3GB quantizzati)
+- Spazio libero su disco: almeno 5 GB (dipende dal modello)
 
-- Recupero in tempo reale delle notizie tech italiane tramite feed RSS
-- Comando `/start` per presentazione del bot
-- Comando `/tech` per ottenere le ultime novità
-- Pulsante inline per recuperare le notizie con un tap
-- Auto-terminazione: il bot si chiude automaticamente dopo aver inviato le notizie (utile per eseguirlo on-demand da Termux)
+1) Compilare llama.cpp in Termux
 
----
-
-## 🛠️ Tecnologie utilizzate
-
-- **Python 3**
-- **[python-telegram-bot](https://python-telegram-bot.org/)**
-- **[feedparser](https://pypi.org/project/feedparser/)**
-- **Termux** (opzionale, per esecuzione su Android)
-
----
-
-## 📲 Creazione del bot su Telegram
-
-1. Apri Telegram.
-2. Cerca **@BotFather**.
-3. Esegui il comando:
-
-   ```text
-   /newbot
-   ```
-4. Scegli un nome per il bot (es. Tech News Bot) e un username che termini con `bot` (es. `tech_news_bot`).
-
-5. BotFather ti fornirà un TOKEN simile a:
-   `1234567890:ABCdefGHIjkLMNopQRstuVWxyz`
-
-6. Inserisci il token nel file `bot.py` (sostituendo il valore di `TOKEN`) oppure esportalo come variabile d'ambiente in Termux:
+Esegui i seguenti comandi in Termux:
 
 ```bash
-export TELEGRAM_BOT_TOKEN="1234567890:ABCdefGHIjkLMNopQRstuVWxyz"
+pkg update && pkg upgrade -y
+pkg install git clang make python wget -y
+
+# Clona e compila llama.cpp
+cd $HOME
+git clone https://github.com/ggerganov/llama.cpp.git
+cd llama.cpp
+make
+
+# L'eseguibile sarà in $HOME/llama.cpp/main
 ```
 
----
+Se `make` fallisce per limiti di memoria, prova a compilare sul PC e trasferire l'eseguibile su Termux (cartella $HOME/llama.cpp/).
 
-## ▶️ Eseguire il bot in Termux (on-demand con Termux:Widget)
+2) Scaricare un modello quantizzato (ggml/gguf)
 
-La soluzione più semplice per avviare il bot solo quando ti serve è usare Termux insieme all'add-on Termux:Widget. Il bot è stato aggiornato per auto-terminarsi dopo aver inviato le notizie, quindi puoi:
+Cerca modelli già convertiti in formato ggml/gguf e quantizzati (4-bit) su Hugging Face o TheBloke. Esempi di tag da cercare: "ggml", "gguf", "q4_0", "quantized".
 
-- Avviare il bot con un singolo tap sulla schermata principale (widget).
-- Aprire Telegram e premere il pulsante inline; il bot riceverà l'update, invierà le notizie e poi si chiuderà automaticamente.
+Consigli pratici:
+- Modelli ~3B quantizzati sono il compromesso per devices con 4GB RAM.
+- Se trovi modelli alpaca/llama-derivates in formato ggml/gguf, preferiscili.
 
-Passaggi rapidi:
-
-1. Installa Termux (consigliato da F-Droid) e avvialo.
-2. Installa Termux:Widget dall'app store (F-Droid / Play Store) e concedi i permessi richiesti.
-3. Clona questo repository o copia `bot.py` nella tua home di Termux, ad esempio `$HOME/telegram-tech-news-bot/`.
-4. Crea la cartella per i widget (se non esiste):
+Salva il file modello nella cartella $HOME/models/ e imposta la variabile d'ambiente:
 
 ```bash
-mkdir -p $HOME/.shortcuts
+export MODEL_PATH="$HOME/models/tuo_modello.gguf"
 ```
 
-5. Crea lo script del widget (esempio: `$HOME/.shortcuts/start_tech_news_bot.sh`) con questo contenuto:
+3) (Opzionale) Creare uno swap file per evitare OOM
 
+Se hai spazio libero su storage e vedi OOM, puoi creare uno swapfile (più lento, usalo solo se necessario):
+
+```bash
+fallocate -l 2G /sdcard/swapfile
+mkswap /sdcard/swapfile
+swapon /sdcard/swapfile
+```
+
+Nota: su alcuni dispositivi `fallocate` non è disponibile; usa `dd if=/dev/zero of=/sdcard/swapfile bs=1M count=2048`.
+
+4) Configurare LLAMA_CPP_PATH e MODEL_PATH
+
+Nel tuo ambiente Termux (o nello script widget), esporta le variabili:
+
+```bash
+export LLAMA_CPP_PATH="$HOME/llama.cpp/main"
+export MODEL_PATH="$HOME/models/tuo_modello.gguf"
+export TELEGRAM_BOT_TOKEN="1234567890:ABC..."
+```
+
+5) Esempi di script utili inclusi nel repo
+
+- termux/install_llama.sh: script che automatizza il `git clone` e `make` di llama.cpp.
+- termux/create_swap.sh: script per creare un swapfile (opzionale).
+- termux/run_llama_example.sh: esempio di esecuzione di llama.cpp con prompt semplice.
+
+Contenuto degli script (già presenti in repo):
+
+termux/install_llama.sh
 ```bash
 #!/data/data/com.termux/files/usr/bin/sh
-# Avvia il bot Telegram Tech News dalla cartella del repository
-
-# Modifica il percorso se hai posizionato il repo altrove
-cd "$HOME/telegram-tech-news-bot" || exit 1
-
-# (Opzionale) Esporta qui il token se non l'hai impostato globalmente
-# export TELEGRAM_BOT_TOKEN="1234567890:ABCdefGHIjkLMNopQRstuVWxyz"
-
-python3 bot.py
+set -e
+pkg update -y
+pkg install -y git clang make
+cd "$HOME"
+if [ ! -d "$HOME/llama.cpp" ]; then
+  git clone https://github.com/ggerganov/llama.cpp.git
+fi
+cd llama.cpp
+make
+echo "Compilazione completata. Eseguibile: $HOME/llama.cpp/main"
 ```
 
-6. Rendi eseguibile lo script:
-
+termux/create_swap.sh
 ```bash
-chmod +x $HOME/.shortcuts/start_tech_news_bot.sh
+#!/data/data/com.termux/files/usr/bin/sh
+# Crea uno swapfile da 2GB su /sdcard (se hai spazio). Modifica il percorso se serve.
+SWAP_PATH="/sdcard/swapfile"
+if [ -f "$SWAP_PATH" ]; then
+  echo "Swapfile già presente: $SWAP_PATH"
+  exit 0
+fi
+# Usa dd se fallisce fallocate
+if command -v fallocate >/dev/null 2>&1; then
+  fallocate -l 2G "$SWAP_PATH"
+else
+  dd if=/dev/zero of="$SWAP_PATH" bs=1M count=2048
+fi
+mkswap "$SWAP_PATH"
+swapon "$SWAP_PATH"
+echo "Swap attivato: $SWAP_PATH"
 ```
 
-7. Aggiungi il widget Termux:Widget alla schermata principale e seleziona `start_tech_news_bot.sh` come shortcut.
-
-8. Usa il widget: con un tap lo script lancerà `bot.py` in Termux; apri Telegram e premi il pulsante inline per ricevere le notizie. Il bot si chiuderà dopo aver inviato le news.
-
-Note e suggerimenti:
-
-- Se preferisci che il bot resti sempre attivo, puoi eseguire `python3 bot.py` in background con `tmux` o `nohup`, oppure usare Termux:Boot per lanciarlo all'avvio.
-- Assicurati che `python3` e le dipendenze (`python-telegram-bot`, `feedparser`) siano installate in Termux:
-
+termux/run_llama_example.sh
 ```bash
-pkg install python
-pip install python-telegram-bot feedparser
+#!/data/data/com.termux/files/usr/bin/sh
+# Esempio di invocazione di llama.cpp (modifica MODEL_PATH/LLAMA_CPP_PATH come necessario)
+LLAMA_CPP_PATH="$HOME/llama.cpp/main"
+MODEL_PATH="$HOME/models/tuo_modello.gguf"
+PROMPT="Riassumi in italiano: Ciao mondo"
+"$LLAMA_CPP_PATH" -m "$MODEL_PATH" -p "$PROMPT" --n_predict 128
 ```
 
----
+6) Integrazione con il bot
 
-## Licenza
+Il bot (bot.py) chiama l'eseguibile definito in LLAMA_CPP_PATH con il modello definito in MODEL_PATH. Assicurati di esportare queste variabili prima di lanciare `python3 bot.py` o di inserirle nello script Termux:Widget.
 
-MIT
+7) Risorse e link utili
+
+- llama.cpp: https://github.com/ggerganov/llama.cpp
+- TheBloke (modelli convertiti): https://huggingface.co/TheBloke
+- Hugging Face: https://huggingface.co
+
+
+Se vuoi, posso suggerire uno specifico file modello da scaricare (se mi dici se preferisci Alpaca-like, Vicuna‑derived, ecc.) e preparare il comando `wget` diretto se il modello è pubblicamente disponibile senza autenticazione. Altrimenti, la guida sopra copre i passaggi necessari per compilare e configurare l'ambiente su Termux.

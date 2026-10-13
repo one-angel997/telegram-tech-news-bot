@@ -1,4 +1,5 @@
 import os
+import re
 import feedparser
 from dotenv import load_dotenv
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
@@ -21,58 +22,99 @@ FEEDS = [
     "https://www.wired.it/feed/tech/"
 ]
 
+CATEGORIES = {
+    "smartphone": {
+        "label": "📱 Smartphone e cellulari",
+        "keywords": ("smartphone", "cellulare", "iphone", "android", "samsung galaxy", "xiaomi", "pixel phone"),
+    },
+    "pc": {
+        "label": "💻 PC e laptop",
+        "keywords": ("laptop", "notebook", "pc", "computer", "processore", "scheda video", "gpu", "desktop", "macbook"),
+    },
+    "ai": {
+        "label": "🤖 AI e affini",
+        "keywords": ("ai", "intelligenza artificiale", "machine learning", "deep learning", "generative ai", "chatgpt", "openai", "gemini", "copilot", "llm", " ia "),
+    },
+    "telecom": {
+        "label": "📶 Telecomunicazioni",
+        "keywords": ("telecomunicazioni", "5g", "6g", "fibra ottica", "banda larga", "wifi", "wi-fi", "rete mobile", "operatore telefonico", "starlink"),
+    },
+    "informatica": {
+        "label": "🖥 Informatica",
+        "keywords": ("software", "cybersecurity", "sicurezza informatica", "database", "cloud", "windows", "linux", "applicazione", "programmazione", "internet", "videogioco"),
+    },
+}
+
+
+def matches_category(entry, category_id):
+    text = f"{entry.get('title', '')} {entry.get('summary', '')}".casefold()
+    for keyword in CATEGORIES[category_id]["keywords"]:
+        keyword = keyword.strip()
+        if len(keyword) <= 3:
+            if re.search(rf"\b{re.escape(keyword)}\b", text):
+                return True
+        elif keyword in text:
+            return True
+    return False
+
+
+def category_keyboard():
+    category_ids = list(CATEGORIES)
+    rows = [
+        [InlineKeyboardButton(CATEGORIES[category_id]["label"], callback_data=f"category:{category_id}")
+         for category_id in category_ids[index:index + 2]]
+        for index in range(0, len(category_ids), 2)
+    ]
+    rows.append([InlineKeyboardButton("📰 Tutte le notizie", callback_data="category:all")])
+    return InlineKeyboardMarkup(rows)
+
 
 async def start(update, context):
-    # Crea il pulsante inline che chiama tech
-    keyboard = [
-        [InlineKeyboardButton("📰 Ultime Notizie Tech", callback_data="get_tech")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
     await update.message.reply_text(
         "Ciao! 👋\n"
-        "Sono il tuo bot per le notizie tech italiane.\n"
-        "Clicca il pulsante sotto per vedere le ultime novità!",
-        reply_markup=reply_markup
+        "Sono il tuo bot per le notizie tech italiane. Scegli una categoria:",
+        reply_markup=category_keyboard()
     )
 
 
-async def tech(update, context):
-    # Usa effective_message per funzionare sia con comandi che con callback
-    await update.effective_message.reply_text("🔍 Recupero le ultime notizie tech italiane...")
-
+async def send_news(update, category_id):
+    category_name = "tutte le categorie" if category_id == "all" else CATEGORIES[category_id]["label"]
+    await update.effective_message.reply_text(f"🔍 Cerco le ultime notizie: {category_name}...")
     news_list = []
 
     for url in FEEDS:
         feed = feedparser.parse(url)
-        for entry in feed.entries[:3]:  # 3 notizie per fonte
-            title = entry.title
-            link = entry.link
+        for entry in feed.entries[:15]:
+            if category_id != "all" and not matches_category(entry, category_id):
+                continue
+            title = entry.get("title", "Senza titolo")
+            link = entry.get("link", "")
             news_list.append(f"• {title}\n{link}")
 
     if not news_list:
-        await update.effective_message.reply_text("Nessuna notizia trovata al momento.")
+        await update.effective_message.reply_text(
+            f"Non ho trovato notizie per {category_name} al momento.",
+            reply_markup=category_keyboard()
+        )
         return
 
-    # Limitiamo il numero totale di notizie
     risposta = "\n\n".join(news_list[:15])
-    
-    # Crea il pulsante anche nel messaggio delle notizie
-    keyboard = [
-        [InlineKeyboardButton("🔄 Ricerca di nuovo", callback_data="get_tech")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    await update.effective_message.reply_text("📰 Ecco le ultime news:\n\n" + risposta, reply_markup=reply_markup)
+    await update.effective_message.reply_text(
+        f"📰 Notizie: {category_name}\n\n{risposta}",
+        reply_markup=category_keyboard()
+    )
+
+
+async def tech(update, context):
+    await send_news(update, "all")
 
 
 async def tech_button_callback(update, context):
-    """Gestisce il click del pulsante e chiama la funzione tech"""
     query = update.callback_query
-    await query.answer()  # Chiude la notifica di caricamento
-    
-    # Chiama direttamente la funzione tech
-    await tech(update, context)
+    await query.answer()
+    category_id = query.data.removeprefix("category:")
+    if category_id == "all" or category_id in CATEGORIES:
+        await send_news(update, category_id)
 
 
 def main():
@@ -80,7 +122,7 @@ def main():
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("tech", tech))
-    app.add_handler(CallbackQueryHandler(tech_button_callback, pattern="get_tech"))
+    app.add_handler(CallbackQueryHandler(tech_button_callback, pattern=r"^category:"))
 
     app.run_polling()
 

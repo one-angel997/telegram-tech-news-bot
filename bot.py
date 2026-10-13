@@ -1,10 +1,15 @@
 import os
 import feedparser
+from dotenv import load_dotenv
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler
 
-# Puoi usare una variabile d'ambiente oppure scrivere il token in chiaro
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "INSERISCI_IL_TUO_TOKEN_TELEGRAM")
+# Carica il token dal file .env presente nella cartella del progetto
+load_dotenv()
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+
+if not TOKEN:
+    raise ValueError("Devi impostare TELEGRAM_BOT_TOKEN nel file .env")
 
 # Fonti italiane di news tech
 FEEDS = [
@@ -71,9 +76,6 @@ async def tech_button_callback(update, context):
 
 
 def main():
-    if not TOKEN or TOKEN == "INSERISCI_IL_TUO_TOKEN_TELEGRAM":
-        raise ValueError("Devi impostare il TOKEN del bot Telegram in bot.py o nella variabile TELEGRAM_BOT_TOKEN")
-
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))

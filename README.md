@@ -1,6 +1,16 @@
-## Installazione e uso di llama.cpp e modelli quantizzati su Termux
+# Telegram Tech News Bot
 
-Questa sezione spiega come compilare llama.cpp su Termux, scaricare un modello ggml/gguf quantizzato e configurare il bot per usare il modello locale per i riassunti.
+Un bot Telegram in Python che recupera notizie tech italiane da HDblog, SmartWorld, Hardware Upgrade, Tom's HW, Everyeye e Wired.
+
+Funzionalità principali:
+- Notizie filtrabili per smartphone e cellulari, PC e laptop, AI, telecomunicazioni e informatica
+- Riassunti on demand generati da un modello llama.cpp locale, fino a 600 caratteri
+- Configurazione del token Telegram tramite file `.env`
+- Script di supporto per l'installazione e l'avvio su Termux
+
+## Installazione e uso di llama.cpp su Termux
+
+Questa guida spiega come compilare llama.cpp su Termux, scaricare un modello quantizzato e configurare il bot per generare riassunti in locale.
 
 ATTENZIONE: il download di alcuni modelli può richiedere l'accesso a Hugging Face e l'accettazione di licenze. Verifica sempre i termini d'uso.
 
@@ -129,3 +139,82 @@ Il bot (bot.py) chiama l'eseguibile definito in LLAMA_CPP_PATH con il modello de
 
 
 Se vuoi, posso suggerire uno specifico file modello da scaricare (se mi dici se preferisci Alpaca-like, Vicuna‑derived, ecc.) e preparare il comando `wget` diretto se il modello è pubblicamente disponibile senza autenticazione. Altrimenti, la guida sopra copre i passaggi necessari per compilare e configurare l'ambiente su Termux.
+---
+
+## Creare e configurare il bot Telegram
+
+Apri Telegram, cerca **@BotFather** e segui questi passaggi:
+
+1. Avvia una conversazione con BotFather.
+2. Invia il comando:
+   ```text
+   /newbot
+   ```
+3. Scegli un nome e un username che termini con `bot` (es. `tech_news_bot`).
+4. BotFather ti fornirà un token simile a:
+
+   ```text
+   1234567890:ABCdefGHIjkLMNopQRstuVWxyz
+   ```
+
+---
+
+## 🔐 Configurazione del token (consigliato: file .env)
+
+Per motivi di sicurezza è preferibile non inserire il token direttamente nel codice. Questo repository ora usa `python-dotenv` per leggere la variabile `TELEGRAM_BOT_TOKEN` da un file `.env` nella cartella del progetto.
+
+1. Installa la dipendenza (virtualenv consigliato):
+
+   ```bash
+   pip install python-dotenv
+   ```
+
+2. Crea un file `.env` nella cartella del progetto con questo contenuto (sostituisci il placeholder con il token reale):
+
+   ```env
+   TELEGRAM_BOT_TOKEN=1234567890:ABCdefGHIjkLMNopQRstuVWxyz
+   ```
+
+   Nota: non aggiungere virgolette attorno al token e non aggiungere spazi extra o newline alla fine della riga.
+
+3. `.env` è già incluso in `.gitignore` per evitare di commettere il token accidentalmente.
+
+---
+
+## ⚙️ Esecuzione in Termux (Android)
+
+Esempio rapido di comandi da eseguire in Termux nella cartella del progetto:
+
+```bash
+# (opzionale) crea e attiva virtualenv
+python -m venv venv
+source venv/bin/activate
+
+# installa dipendenze
+pip install -r requirements.txt
+# oppure
+pip install python-dotenv python-telegram-bot feedparser
+
+# crea .env (aprilo con un editor e incolla il token)
+echo "TELEGRAM_BOT_TOKEN=INSERISCI_IL_TUO_TOKEN_TELEGRAM" > .env
+chmod 600 .env
+
+# avvia il bot
+python bot.py
+```
+
+Se preferisci non salvare il token in un file `.env`, puoi esportare la variabile nella shell prima di eseguire il bot:
+
+```bash
+export TELEGRAM_BOT_TOKEN="1234567890:ABCdefGHIjkLMNopQRstuVWxyz"
+python bot.py
+```
+
+---
+
+## ℹ️ Note finali
+
+- Non condividere il token pubblicamente.
+- Controlla `bot.py` per altre opzioni o personalizzazioni delle fonti RSS.
+
+Buon lavoro!

@@ -2,12 +2,18 @@ import os
 import asyncio
 import subprocess
 import shlex
+import re
 import feedparser
+from dotenv import load_dotenv
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler
 
-# Puoi usare una variabile d'ambiente oppure scrivere il token in chiaro
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "INSERISCI_IL_TUO_TOKEN_TELEGRAM")
+load_dotenv()
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+
+if not TOKEN:
+    raise ValueError("Devi impostare TELEGRAM_BOT_TOKEN nel file .env o nell'ambiente")
+
 # Percorso all'eseguibile di llama.cpp (es. $HOME/llama.cpp/main)
 LLAMA_CPP_PATH = os.getenv("LLAMA_CPP_PATH", "./main")
 # Percorso al modello ggml/gguf quantizzato
@@ -26,19 +32,58 @@ FEEDS = [
 # Default del riassunto in caratteri
 DEFAULT_SUMMARY_CHARS = 600
 
+CATEGORIES = {
+    "smartphone": {
+        "label": "📱 Smartphone e cellulari",
+        "keywords": ("smartphone", "cellulare", "iphone", "android", "samsung galaxy", "xiaomi", "pixel phone"),
+    },
+    "pc": {
+        "label": "💻 PC e laptop",
+        "keywords": ("laptop", "notebook", "pc", "computer", "processore", "scheda video", "gpu", "desktop", "macbook"),
+    },
+    "ai": {
+        "label": "🤖 AI e affini",
+        "keywords": ("ai", "intelligenza artificiale", "machine learning", "deep learning", "generative ai", "chatgpt", "openai", "gemini", "copilot", "llm", " ia "),
+    },
+    "telecom": {
+        "label": "📶 Telecomunicazioni",
+        "keywords": ("telecomunicazioni", "5g", "6g", "fibra ottica", "banda larga", "wifi", "wi-fi", "rete mobile", "operatore telefonico", "starlink"),
+    },
+    "informatica": {
+        "label": "🖥 Informatica",
+        "keywords": ("software", "cybersecurity", "sicurezza informatica", "database", "cloud", "windows", "linux", "applicazione", "programmazione", "internet", "videogioco"),
+    },
+}
+
+
+def matches_category(entry, category_id):
+    text = f"{entry.get('title', '')} {entry.get('summary', '')}".casefold()
+    for keyword in CATEGORIES[category_id]["keywords"]:
+        keyword = keyword.strip()
+        if len(keyword) <= 3:
+            if re.search(rf"\b{re.escape(keyword)}\b", text):
+                return True
+        elif keyword in text:
+            return True
+    return False
+
+
+def category_keyboard():
+    category_ids = list(CATEGORIES)
+    rows = [
+        [InlineKeyboardButton(CATEGORIES[category_id]["label"], callback_data=f"category:{category_id}")
+         for category_id in category_ids[index:index + 2]]
+        for index in range(0, len(category_ids), 2)
+    ]
+    rows.append([InlineKeyboardButton("📰 Tutte le notizie", callback_data="category:all")])
+    return InlineKeyboardMarkup(rows)
+
 
 async def start(update, context):
-    # Crea il pulsante inline che chiama tech
-    keyboard = [
-        [InlineKeyboardButton("📰 Ultime Notizie Tech", callback_data="get_tech")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
     await update.message.reply_text(
         "Ciao! 👋\n"
-        "Sono il tuo bot per le notizie tech italiane.\n"
-        "Clicca il pulsante sotto per vedere le ultime novità!",
-        reply_markup=reply_markup
+        "Sono il tuo bot per le notizie tech italiane. Scegli una categoria:",
+        reply_markup=category_keyboard()
     )
 
 
@@ -74,7 +119,7 @@ def chunk_text(text: str, max_chunk: int = 1500):
 
 def run_llama_blocking(prompt: str, n_predict: int = 256) -> str:
     """Esegue llama.cpp (o compatibile) in modo sincrono e ritorna l'output come stringa.
-    Usa LLAMA_CPP_PATH e MODEL_PATH definiti sopra."
+    Usa LLAMA_CPP_PATH e MODEL_PATH definiti sopra."""
     if not MODEL_PATH:
         return "[LLM non configurato: imposta la variabile d'ambiente MODEL_PATH con il percorso al modello ggml/gguf]"
 
@@ -126,35 +171,34 @@ async def summarize_text(text: str, target_chars: int = DEFAULT_SUMMARY_CHARS) -
     final = await asyncio.to_thread(run_llama_blocking, final_prompt, 512)
     return truncate_to_char_limit(final, target_chars)
 
+async def tech(update, context, category_id="all"):
+    category_name = "tutte le categorie" if category_id == "all" else CATEGORIES[category_id]["label"]
+    await update.effective_message.reply_text(f"🔍 Recupero le ultime notizie: {category_name}...")
 
-async def tech(update, context):
-    # Usa effective_message per funzionare sia con comandi che con callback
-    await update.effective_message.reply_text("🔍 Recupero le ultime notizie tech italiane...")
-
-    news_entries = []  # lista di dict: {title, link, summary_text}
-
+    news_entries = []
     for url in FEEDS:
         feed = feedparser.parse(url)
-        for entry in feed.entries[:3]:  # 3 notizie per fonte
-            title = entry.title
-            link = entry.link
-            # prova a prendere contenuto esteso dal feed (summary o description)
-            content = ""
-            if 'content' in entry:
+        for entry in feed.entries[:3]:
+            if category_id != "all" and not matches_category(entry, category_id):
+                continue
+
+            title = entry.get("title", "Senza titolo")
+            link = entry.get("link", "")
+            if "content" in entry:
                 try:
                     content = entry.content[0].value
-                except Exception:
-                    content = entry.get('summary', '')
+                except (AttributeError, IndexError, KeyError, TypeError):
+                    content = entry.get("summary", "")
             else:
-                content = entry.get('summary', entry.get('description', ''))
-            # rimuovi tag html semplicemente
-            import re
-            clean = re.sub('<[^<]+?>', '', content)
+                content = entry.get("summary", entry.get("description", ""))
+            clean = re.sub(r"<[^<]+?>", "", content)
             news_entries.append({"title": title, "link": link, "content": clean})
 
     if not news_entries:
-        await update.effective_message.reply_text("Nessuna notizia trovata al momento.")
-        # Arresta l'applicazione subito dopo aver risposto
+        await update.effective_message.reply_text(
+            f"Non ho trovato notizie per {category_name} al momento.",
+            reply_markup=category_keyboard()
+        )
         await asyncio.sleep(0.3)
         try:
             await context.application.stop()
@@ -162,30 +206,26 @@ async def tech(update, context):
             context.application.stop()
         return
 
-    # Limitiamo il numero totale di notizie
-    max_items = 10
-    entries = news_entries[:max_items]
-
-    # Salva le entries nella chat_data per gestire i callback dei button
+    entries = news_entries[:10]
     try:
-        context.chat_data['last_news'] = entries
+        context.chat_data["last_news"] = entries
     except Exception:
-        # fallback su bot_data
-        context.application.bot_data['last_news'] = entries
+        context.application.bot_data["last_news"] = entries
 
-    # Costruisci il messaggio e la tastiera con pulsanti "Riassunto" per ciascun item
     msg_lines = []
     keyboard = []
-    for i, e in enumerate(entries):
-        msg_lines.append(f"{i+1}. {e['title']}\n{e['link']}")
-        keyboard.append([InlineKeyboardButton(f"Riassunto {i+1}", callback_data=f"get_summary:{i}")])
-
-    # aggiungi il pulsante per ricercare di nuovo
-    keyboard.append([InlineKeyboardButton("🔄 Ricerca di nuovo", callback_data="get_tech")])
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    for index, entry in enumerate(entries):
+        msg_lines.append(f"{index + 1}. {entry['title']}\n{entry['link']}")
+        keyboard.append([
+            InlineKeyboardButton(f"Riassunto {index + 1}", callback_data=f"get_summary:{index}")
+        ])
+    keyboard.extend(category_keyboard().inline_keyboard)
 
     risposta = "\n\n".join(msg_lines)
-    await update.effective_message.reply_text("📰 Ecco le ultime news:\n\n" + risposta, reply_markup=reply_markup)
+    await update.effective_message.reply_text(
+        f"📰 Notizie: {category_name}\n\n{risposta}",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
 
     # Dopo aver inviato le notizie, fermiamo l'applicazione per "auto-distruzione"
     await asyncio.sleep(0.5)  # piccolo ritardo per essere sicuri che i messaggi siano inviati
@@ -196,12 +236,14 @@ async def tech(update, context):
 
 
 async def tech_button_callback(update, context):
-    """Gestisce il click del pulsante e chiama la funzione tech"""
     query = update.callback_query
-    await query.answer()  # Chiude la notifica di caricamento
-
-    # Chiama direttamente la funzione tech
-    await tech(update, context)
+    await query.answer()
+    if query.data == "get_tech":
+        category_id = "all"
+    else:
+        category_id = query.data.removeprefix("category:")
+    if category_id == "all" or category_id in CATEGORIES:
+        await tech(update, context, category_id)
 
 
 async def summary_callback(update, context):
@@ -240,14 +282,11 @@ async def summary_callback(update, context):
 
 
 def main():
-    if not TOKEN or TOKEN == "INSERISCI_IL_TUO_TOKEN_TELEGRAM":
-        raise ValueError("Devi impostare il TOKEN del bot Telegram in bot.py o nella variabile TELEGRAM_BOT_TOKEN")
-
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("tech", tech))
-    app.add_handler(CallbackQueryHandler(tech_button_callback, pattern="get_tech"))
+    app.add_handler(CallbackQueryHandler(tech_button_callback, pattern=r"^(get_tech|category:)") )
     app.add_handler(CallbackQueryHandler(summary_callback, pattern="get_summary:"))
 
     app.run_polling()

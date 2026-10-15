@@ -20,6 +20,14 @@ Configurazione di riferimento: dispositivi Android 13 con 4 GB di RAM con almeno
   che Android lo mantenga in memoria.
 - Tieni modello e sorgenti nella memoria privata di Termux (`$HOME`), non sulla microSD.
 
+## Funzionalità principali
+
+- Recupero in tempo reale delle notizie tech italiane tramite feed RSS
+- Selezione per smartphone e cellulari, PC e laptop, AI, telecomunicazioni e informatica, con filtri per marchi, modelli e tecnologie
+- Rimozione dei titoli duplicati trovati su più feed RSS
+- Riassunti in italiano generati in locale con `llama.cpp`
+- Comandi `/start` e `/tech` e selezione delle categorie tramite pulsanti Telegram
+
 ## 1. Preparare Termux
 
 Installa una versione aggiornata di Termux da F-Droid o dalle release ufficiali

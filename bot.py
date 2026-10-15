@@ -46,37 +46,71 @@ DEFAULT_SUMMARY_CHARS = 600
 CATEGORIES = {
     "smartphone": {
         "label": "📱 Smartphone e cellulari",
-        "keywords": ("smartphone", "cellulare", "iphone", "android", "samsung galaxy", "xiaomi", "pixel phone"),
+        "keywords": (
+            "smartphone", "cellulare", "telefonino", "iphone", "android",
+            "samsung", "samsung galaxy", "galaxy s", "galaxy a", "galaxy z",
+            "galaxy fold", "galaxy flip", "galaxy note", "xiaomi", "redmi",
+            "poco", "google pixel",
+            "pixel", "oneplus", "oppo", "vivo", "realme", "motorola", "moto g",
+            "huawei", "honor", "nothing phone", "sony xperia", "nokia",
+            "asus zenfone", "fairphone", "foldable", "pieghevole",
+        ),
     },
     "pc": {
         "label": "💻 PC e laptop",
-        "keywords": ("laptop", "notebook", "pc", "computer", "processore", "scheda video", "gpu", "desktop", "macbook"),
+        "keywords": (
+            "laptop", "notebook", "pc", "computer", "processore", "cpu",
+            "scheda video", "gpu", "desktop", "macbook", "workstation",
+            "scheda madre", "ram", "ssd",
+        ),
     },
     "ai": {
         "label": "🤖 AI e affini",
-        "keywords": ("ai", "intelligenza artificiale", "machine learning", "deep learning", "generative ai", "chatgpt", "openai", "gemini", "copilot", "llm", " ia "),
+        "keywords": (
+            "ai", "ia", "intelligenza artificiale", "machine learning",
+            "deep learning", "generative ai", "chatgpt", "openai", "gemini",
+            "copilot", "llm", "anthropic", "claude", "mistral", "le chat",
+            "meta ai", "llama", "xai", "grok", "deepseek", "perplexity",
+            "cohere", "hugging face", "stability ai", "midjourney", "runway ai",
+        ),
     },
     "telecom": {
         "label": "📶 Telecomunicazioni",
-        "keywords": ("telecomunicazioni", "5g", "6g", "fibra ottica", "banda larga", "wifi", "wi-fi", "rete mobile", "operatore telefonico", "starlink"),
+        "keywords": (
+            "telecomunicazioni", "telefonia", "5g", "6g", "fibra ottica",
+            "banda larga", "wifi", "wi-fi", "rete mobile", "rete fissa",
+            "operatore telefonico", "operatore mobile", "router", "modem",
+            "satellite", "satellitare", "comunicazioni satellitari",
+            "navigazione satellitare", "galileo", "gnss", "gps", "leonardo",
+            "telespazio", "thales alenia space", "starlink", "eutelsat",
+            "oneweb", "iris2", "esa", "tim", "vodafone", "windtre", "iliad",
+            "fastweb", "open fiber", "fibercop",
+        ),
     },
     "informatica": {
         "label": "🖥 Informatica",
-        "keywords": ("software", "cybersecurity", "sicurezza informatica", "database", "cloud", "windows", "linux", "applicazione", "programmazione", "internet", "videogioco"),
+        "keywords": (
+            "software", "cybersecurity", "sicurezza informatica", "database",
+            "cloud", "windows", "linux", "applicazione", "programmazione",
+            "linguaggio di programmazione", "internet", "videogioco", ".net",
+            "c#", "c++", "python", "java", "javascript", "typescript", "golang",
+            "rust", "php", "ruby", "swift", "kotlin", "sql", "powershell",
+            "visual basic", "vb.net", "asp.net", "react", "node.js",
+        ),
     },
 }
 
 
 def matches_category(entry, category_id):
     text = f"{entry.get('title', '')} {entry.get('summary', '')}".casefold()
-    for keyword in CATEGORIES[category_id]["keywords"]:
-        keyword = keyword.strip()
-        if len(keyword) <= 3:
-            if re.search(rf"\b{re.escape(keyword)}\b", text):
-                return True
-        elif keyword in text:
-            return True
-    return False
+    return any(
+        re.search(rf"(?<!\w){re.escape(keyword.casefold())}(?![^\W\d_])", text)
+        for keyword in CATEGORIES[category_id]["keywords"]
+    )
+
+
+def news_title_key(title):
+    return re.sub(r"\W+", " ", title.casefold()).strip()
 
 
 def category_keyboard():
@@ -185,14 +219,19 @@ async def tech(update, context, category_id="all"):
     await update.effective_message.reply_text(f"🔍 Recupero le ultime notizie: {category_name}...")
 
     news_entries = []
+    seen_titles = set()
     for url in FEEDS:
         feed = feedparser.parse(url)
         for entry in feed.entries[:5]:
             if category_id != "all" and not matches_category(entry, category_id):
                 continue
 
-            title = entry.get("title", "Senza titolo")
-            link = entry.get("link", "")
+            title = entry.get("title") or "Senza titolo"
+            link = entry.get("link") or ""
+            title_key = news_title_key(title) or link
+            if title_key in seen_titles:
+                continue
+            seen_titles.add(title_key)
             if "content" in entry:
                 try:
                     content = entry.content[0].value

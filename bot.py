@@ -26,7 +26,11 @@ FEEDS = [
     "https://rss.hwupgrade.it/news.xml",
     "https://www.tomshw.it/feed/",
     "https://www.everyeye.it/feed/notizie/",
-    "https://www.wired.it/feed/tech/"
+    "https://www.wired.it/feed/tech/",
+    "https://www.macitynet.it/feed/",
+    "https://www.agendadigitale.eu/feed/",
+    "https://www.key4biz.it/feed/",
+    "https://www.cybersecurity360.it/feed/"
 ]
 
 # Default del riassunto in caratteri
@@ -178,7 +182,7 @@ async def tech(update, context, category_id="all"):
     news_entries = []
     for url in FEEDS:
         feed = feedparser.parse(url)
-        for entry in feed.entries[:3]:
+        for entry in feed.entries[:5]:
             if category_id != "all" and not matches_category(entry, category_id):
                 continue
 

@@ -7,7 +7,8 @@ Un bot Telegram scritto in **Python**, pensato per girare anche in **Termux** su
 ## 🚀 Funzionalità
 
 - Recupero in tempo reale delle notizie tech italiane tramite feed RSS
-- Selezione delle notizie per smartphone e cellulari, PC e laptop, AI, telecomunicazioni e informatica
+- Selezione delle notizie per smartphone e cellulari, PC e laptop, AI, telecomunicazioni e informatica, con filtri per marchi, modelli e tecnologie
+- Rimozione dei titoli duplicati trovati su più feed RSS
 - Comando `/start` per presentazione del bot
 - Comando `/tech` per ottenere le ultime novità
 - Codice semplice, estendibile e adatto a essere eseguito in Termux

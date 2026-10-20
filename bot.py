@@ -149,6 +149,7 @@ def run_llama_blocking(messages: list[dict[str, str]]) -> str:
     """Invia una richiesta al server llama.cpp, che mantiene il modello caricato."""
     payload = json.dumps({
         "messages": messages,
+        "chat_template_kwargs": {"enable_thinking": False},
         "temperature": 0.2,
         "max_tokens": 256,
         "stream": False,

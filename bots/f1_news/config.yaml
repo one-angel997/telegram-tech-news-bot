@@ -1,0 +1,50 @@
+bot:
+  display_name: "F1 News Bot"
+  token: "${TELEGRAM_BOT_TOKEN}"
+
+feeds:
+  - https://www.racefans.net/feed/
+  - https://www.formula1.com/content/fom-website/en/latest-headlines.rss
+  - https://www.autosport.com/rss/f1/
+  - https://www.gpblog.com/en/rss.xml
+  - https://motorsport.uol.com.br/rss/f1/
+
+categories:
+  weekend:
+    label: "🏁 Weekend GP"
+    keywords:
+      - gran premio
+      - gp
+      - gara
+      - qualifiche
+      - sprint
+  teams:
+    label: "🏎️ Team e piloti"
+    keywords:
+      - ferrari
+      - red bull
+      - mercedes
+      - mclaren
+      - verstappen
+      - leclerc
+      - piastri
+      - hamilton
+  tech:
+    label: "⚙️ Tecnologia"
+    keywords:
+      - aerodinamica
+      - telaio
+      - motore
+      - power unit
+      - sospensioni
+  news:
+    label: "📰 Generale"
+    keywords:
+      - f1
+      - formula 1
+      - paddock
+      - pit lane
+
+llama:
+  server_url: "http://127.0.0.1:8080"
+  request_timeout: 180

@@ -1,0 +1,62 @@
+bot:
+  display_name: "Tech News Bot"
+  token: "${TELEGRAM_BOT_TOKEN}"
+
+feeds:
+  - https://www.hdblog.it/rss/
+  - https://www.smartworld.it/feed
+  - https://rss.hwupgrade.it/news.xml
+  - https://www.tomshw.it/feed/
+  - https://www.everyeye.it/feed/notizie/
+  - https://www.wired.it/feed/tech/
+  - https://www.macitynet.it/feed/
+  - https://www.agendadigitale.eu/feed/
+  - https://www.key4biz.it/feed/
+  - https://www.cybersecurity360.it/feed/
+
+categories:
+  smartphone:
+    label: "📱 Smartphone e cellulari"
+    keywords:
+      - smartphone
+      - iphone
+      - android
+      - samsung
+      - xiaomi
+      - google pixel
+  pc:
+    label: "💻 PC e laptop"
+    keywords:
+      - laptop
+      - pc
+      - processore
+      - gpu
+      - scheda video
+  ai:
+    label: "🤖 AI"
+    keywords:
+      - ai
+      - ia
+      - chatgpt
+      - openai
+      - gemini
+  telecom:
+    label: "📶 Telecomunicazioni"
+    keywords:
+      - 5g
+      - wifi
+      - fibra ottica
+      - tim
+      - vodafone
+  informatica:
+    label: "🖥 Informatica"
+    keywords:
+      - software
+      - cybersecurity
+      - linux
+      - python
+      - cloud
+
+llama:
+  server_url: "http://127.0.0.1:8080"
+  request_timeout: 180

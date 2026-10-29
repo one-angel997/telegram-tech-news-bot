@@ -1,5 +1,11 @@
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 .venv/
+venv/
 .env
-.env.*
+bots/*/.env
+*.log
+.DS_Store
+.vscode/

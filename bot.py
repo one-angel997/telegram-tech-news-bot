@@ -256,19 +256,20 @@ async def tech(update, context, category_id="all"):
     except Exception:
         context.application.bot_data["last_news"] = entries
 
-    msg_lines = []
-    keyboard = []
     for index, entry in enumerate(entries):
-        msg_lines.append(f"{index + 1}. {entry['title']}\n{entry['link']}")
-        keyboard.append([
-            InlineKeyboardButton(f"Riassunto {index + 1}", callback_data=f"get_summary:{index}")
-        ])
-    keyboard.extend(category_keyboard().inline_keyboard)
+        if index:
+            await asyncio.sleep(1)
+        await update.effective_message.reply_text(
+            f"📰 {index + 1}. {entry['title']}\n{entry['link']}",
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton(f"Riassunto {index + 1}", callback_data=f"get_summary:{index}")
+            ]])
+        )
 
-    risposta = "\n\n".join(msg_lines)
+    await asyncio.sleep(1)
     await update.effective_message.reply_text(
-        f"📰 Notizie: {category_name}\n\n{risposta}",
-        reply_markup=InlineKeyboardMarkup(keyboard)
+        "Scegli un'altra categoria per continuare:",
+        reply_markup=category_keyboard()
     )
 
 

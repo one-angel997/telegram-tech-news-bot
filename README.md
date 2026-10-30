@@ -25,6 +25,7 @@ Configurazione di riferimento: dispositivi Android 13 con 4 GB di RAM con almeno
 - Recupero in tempo reale delle notizie tech italiane tramite feed RSS
 - Selezione per smartphone e cellulari, PC e laptop, AI, telecomunicazioni e informatica, con filtri per marchi, modelli e tecnologie
 - Rimozione dei titoli duplicati trovati su più feed RSS
+- Invio di ogni notizia in un messaggio separato, con il relativo pulsante per il riassunto
 - Riassunti in italiano generati in locale con `llama.cpp`
 - Comandi `/start` e `/tech` e selezione delle categorie tramite pulsanti Telegram
 

@@ -53,7 +53,7 @@ CATEGORIES = {
             "poco", "google pixel",
             "pixel", "oneplus", "oppo", "vivo", "realme", "motorola", "moto g",
             "huawei", "honor", "nothing phone", "sony xperia", "nokia",
-            "asus zenfone", "fairphone", "foldable", "pieghevole",
+            "asus zenfone", "fairphone", "foldable", "pieghevole","REDMAGIC","nubia"
         ),
     },
     "pc": {
@@ -61,7 +61,7 @@ CATEGORIES = {
         "keywords": (
             "laptop", "notebook", "pc", "computer", "processore", "cpu",
             "scheda video", "gpu", "desktop", "macbook", "workstation",
-            "scheda madre", "ram", "ssd",
+            "scheda madre", "ram", "ssd","windows","windows 11","OS"
         ),
     },
     "ai": {
@@ -72,6 +72,7 @@ CATEGORIES = {
             "copilot", "llm", "anthropic", "claude", "mistral", "le chat",
             "meta ai", "llama", "xai", "grok", "deepseek", "perplexity",
             "cohere", "hugging face", "stability ai", "midjourney", "runway ai",
+            "jev","skill","prompt","token"
         ),
     },
     "telecom": {
@@ -84,7 +85,7 @@ CATEGORIES = {
             "navigazione satellitare", "galileo", "gnss", "gps", "leonardo",
             "telespazio", "thales alenia space", "starlink", "eutelsat",
             "oneweb", "iris2", "esa", "tim", "vodafone", "windtre", "iliad",
-            "fastweb", "open fiber", "fibercop",
+            "fastweb", "open fiber", "fibercop","Bluetooth","sim","esim"
         ),
     },
     "informatica": {

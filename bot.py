@@ -41,7 +41,7 @@ FEEDS = [
 ]
 
 # Default del riassunto in caratteri
-DEFAULT_SUMMARY_CHARS = 600
+DEFAULT_SUMMARY_CHARS = 3000
 
 CATEGORIES = {
     "smartphone": {

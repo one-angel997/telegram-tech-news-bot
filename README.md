@@ -2,26 +2,26 @@
 
 Bot Telegram in Python che recupera notizie da feed RSS e permette di richiedere un riassunto in italiano. I riassunti sono generati in locale con `llama.cpp` su Android/Termux: `llama-server` carica il modello una volta e il bot invia le richieste al server locale.
 
-A partire dal refactor su `feature/news-bot`, il repository è stato esteso a supportare più profili separati mantenendo una base comune:
+Il repository supporta più profili separati mantenendo una base comune:
 
-- `Tech News` (notizie tecnologiche)
-- `F1 News` (notizie di Formula 1 e motorsport)
+- `Tech News`: notizie tecnologiche italiane
+- `F1 News`: notizie di Formula 1 e motorsport
 
-Tutti i profili condividono la stessa architettura di scraping, filtro, Telegram e riassunto, ma hanno configurazioni, feed e token separati.
+Tutti i profili condividono la stessa architettura per scraping, filtro, Telegram e riassunto. Feed, categorie e token restano separati.
 
-## Hardware di riferimento
+## Funzionalità principali
 
-Configurazione di riferimento: dispositivi Android 13 con 4 GB di RAM con almeno 3 GB di memoria disponibile.
-
-- La RAM, condivisa con Android e le altre app, è il limite principale. La dimensione del file GGUF non corrisponde alla memoria totale richiesta durante l'inferenza.
-- Inizia con il modello **Qwen3.5-0.8B Q4_0**. È una scelta leggera per provare il riassunto locale; la qualità in italiano va verificata con le tue notizie.
-- Il modello Q4_0 occupa circa 563 MB su disco. Il runtime usa memoria aggiuntiva per contesto e generazione.
-- Non iniziare da modelli da 2B o 3B: possono causare rallentamenti o terminare per mancanza di RAM.
-- Tieni modello e sorgenti nella memoria privata di Termux (`$HOME`), non sulla microSD.
+- Recupero in tempo reale delle notizie tramite feed RSS
+- Selezione delle categorie tramite pulsanti Telegram
+- Invio di ogni notizia in un messaggio separato, con pulsante di riassunto dedicato
+- Pausa di un secondo tra un messaggio e l'altro
+- Rimozione dei titoli duplicati trovati su più feed RSS
+- Tastiera delle categorie riproposta al termine dell'elenco
+- Riassunti in italiano generati in locale con `llama.cpp`
+- Supporto a più bot separati con profili e token indipendenti
+- Comandi `/start`, `/tech` e `/f1`
 
 ## Architettura del repository
-
-Il progetto usa una struttura a profili separati ma con codice condiviso:
 
 ```text
 telegram-tech-news-bot/
@@ -33,20 +33,15 @@ telegram-tech-news-bot/
 ├── run_tech_news.py
 ├── run_f1_news.py
 ├── app/
-│   ├── __init__.py
 │   ├── common/
-│   │   ├── __init__.py
 │   │   ├── config.py
 │   │   └── logging.py
 │   ├── feeds/
-│   │   ├── __init__.py
 │   │   ├── fetcher.py
 │   │   └── source_registry.py
 │   ├── summarizer/
-│   │   ├── __init__.py
 │   │   └── llama_client.py
 │   └── telegram/
-│       ├── __init__.py
 │       ├── bot.py
 │       ├── handlers.py
 │       └── keyboards.py
@@ -58,39 +53,42 @@ telegram-tech-news-bot/
 │       ├── .env
 │       └── config.yaml
 └── termux/
-    └── ...
 ```
 
-### Principio della struttura
+### Responsabilità dei principali moduli
 
-- `app/`: logica condivisa tra tutti i bot
-- `bots/<profile>/`: configurazione, feed, keyword e token specifici del profilo
-- `bot.py`: entrypoint generico del profilo attivo
-- `run_tech_news.py`: wrapper semplice per il profilo Tech News
-- `run_f1_news.py`: wrapper semplice per il profilo F1 News
+- `app/common/config.py`: determina il profilo attivo e carica `.env` e `config.yaml`
+- `app/feeds/source_registry.py`: espone feed RSS e categorie del profilo
+- `app/feeds/fetcher.py`: recupera e analizza i feed RSS
+- `app/summarizer/llama_client.py`: genera i riassunti tramite `llama-server`
+- `app/telegram/handlers.py`: gestisce comandi, recupero notizie, messaggi separati e riassunti
+- `app/telegram/keyboards.py`: crea le tastiere delle categorie e dei riassunti
+- `app/telegram/bot.py`: costruisce l'applicazione Telegram e registra gli handler
+- `bot.py`: entrypoint generico selezionabile tramite `BOT_PROFILE`
+- `run_tech_news.py`: avvio dedicato al profilo Tech News
+- `run_f1_news.py`: avvio dedicato al profilo F1 News
 
-In pratica, il codice di scraping, filtro e riassunto resta unico, mentre i feed e le categorie cambiano a seconda del profilo.
+## Hardware di riferimento
 
-## Funzionalità principali
+Configurazione di riferimento: dispositivi Android 13 con 4 GB di RAM e almeno 3 GB di memoria disponibile.
 
-- Recupero in tempo reale delle notizie tramite feed RSS
-- Selezione per categoria tramite pulsanti Telegram
-- Supporto a più profili: Tech News e F1 News
-- Duplicati rimossi tra feed diversi
-- Riassunti in italiano generati in locale con `llama.cpp`
-- Comandi `/start`, `/tech` e `/f1`
-- Configurazione potenziata per separare token, feed, categorie, e ambiente di runtime
+- La RAM è condivisa con Android e le altre app ed è il limite principale
+- Il modello consigliato è **Qwen3.5-0.8B Q4_0**
+- Il file Q4_0 occupa circa 563 MB su disco
+- Il runtime richiede memoria aggiuntiva per contesto e generazione
+- Modelli da 2B o 3B possono essere terminati da Android per mancanza di RAM
+- Tieni modello e sorgenti nella memoria privata di Termux (`$HOME`), non sulla microSD
 
 ## 1. Preparare Termux
 
-Installa una versione aggiornata di Termux da F-Droid o dalle release ufficiali. Evita versioni obsolete. Apri Termux e aggiorna i pacchetti:
+Installa una versione aggiornata di Termux da F-Droid o dalle release ufficiali. Apri Termux e aggiorna i pacchetti:
 
 ```sh
 pkg update && pkg upgrade -y
 pkg install -y git cmake clang make python curl
 ```
 
-Se non hai già una copia del progetto:
+Clona il repository:
 
 ```sh
 cd "$HOME"
@@ -100,24 +98,17 @@ cd telegram-tech-news-bot
 
 ## 2. Compilare llama.cpp e `llama-server`
 
-Lo script incluso scarica i sorgenti ufficiali di `ggml-org/llama.cpp` e compila `llama-server` con un solo job, per contenere il picco di memoria durante la build:
-
 ```sh
-cd "$HOME/telegram-tech-news-bot"
 sh termux/install_llama.sh
 ```
 
-La compilazione può richiedere tempo e spazio temporaneo. Il percorso atteso a fine build è:
+Il percorso atteso a fine build è:
 
 ```text
 $HOME/llama.cpp/build/bin/llama-server
 ```
 
-Se la compilazione viene terminata da Android, chiudi le app non necessarie, lascia Termux in primo piano e riprova. Non copiare un eseguibile compilato per PC: deve essere compilato per Android/ARM64.
-
 ## 3. Scaricare il modello GGUF
-
-Scarica la quantizzazione Q4_0 pubblicata nel repository GGUF del progetto `ggml-org`:
 
 ```sh
 mkdir -p "$HOME/models"
@@ -127,39 +118,33 @@ curl -L --fail --retry 3 \
 ls -lh "$HOME/models/Qwen3.5-0.8B-Q4_0.gguf"
 ```
 
-Il file è di circa 563 MB. Il repository del modello indica licenza Apache-2.0; controlla sempre la scheda del modello e i termini correnti prima dell'uso.
+Il file è di circa 563 MB e usa licenza Apache-2.0. Verifica sempre i termini del modello prima dell'uso.
 
 ## 4. Avviare il server locale
 
-Apri una sessione Termux e avvia il server in primo piano:
-
 ```sh
-cd "$HOME/telegram-tech-news-bot"
 sh termux/start_llama_server.sh
 ```
 
-Il server carica il modello e ascolta solo su `127.0.0.1:8080`, quindi non è esposto alla rete locale. Al primo avvio attendi che il caricamento sia completato. In una seconda sessione Termux puoi controllare che risponda:
+Il server resta disponibile su `127.0.0.1:8080`. Da una seconda sessione Termux puoi verificarlo:
 
 ```sh
 curl http://127.0.0.1:8080/health
 ```
 
-## 5. Installare e configurare il bot
-
-In una seconda sessione Termux:
+## 5. Installare le dipendenze Python
 
 ```sh
-cd "$HOME/telegram-tech-news-bot"
-pkg install -y python
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Crea i bot con [@BotFather](https://t.me/BotFather), quindi crea i file di ambiente per i profili:
+## 6. Configurare i profili Telegram
+
+Crea i due bot con [@BotFather](https://t.me/BotFather). Ogni bot usa un file `.env` separato:
 
 ```sh
-# Tech News
 cat > bots/tech_news/.env <<'EOF'
 TELEGRAM_BOT_TOKEN=INSERISCI_IL_TOKEN_TECH
 LLAMA_SERVER_URL=http://127.0.0.1:8080
@@ -167,212 +152,92 @@ LLAMA_REQUEST_TIMEOUT=180
 BOT_PROFILE=tech_news
 EOF
 
-# F1 News
 cat > bots/f1_news/.env <<'EOF'
 TELEGRAM_BOT_TOKEN=INSERISCI_IL_TOKEN_F1
 LLAMA_SERVER_URL=http://127.0.0.1:8080
 LLAMA_REQUEST_TIMEOUT=180
 BOT_PROFILE=f1_news
 EOF
+
+chmod 600 bots/tech_news/.env bots/f1_news/.env
 ```
 
-Il file `.env` è sempre personale e non va condiviso nel repository. In `bots/<profile>/.env` va inserito solo il token di quel bot e i parametri locali del profilo.
+I token Telegram non devono essere inseriti nel repository. Entrambi i file `.env` specifici dei profili sono esclusi da Git.
 
-## 6. Configurazione del profilo
+## 7. Configurazione di feed e categorie
 
-Ogni profilo ha un file `config.yaml` separato.
+Ogni profilo contiene un file `bots/<profile>/config.yaml` con:
 
-### Tech News
+- nome visualizzato del bot
+- token Telegram risolto dall'ambiente
+- feed RSS
+- categorie
+- keyword
+- parametri di `llama-server`
 
-File: `bots/tech_news/config.yaml`
+Il profilo Tech usa `bots/tech_news/config.yaml`. Il profilo F1 usa `bots/f1_news/config.yaml`.
 
-```yaml
-bot:
-  display_name: "Tech News Bot"
-  token: "${TELEGRAM_BOT_TOKEN}"
+## 8. Avviare i bot
 
-feeds:
-  - https://www.hdblog.it/rss/
-  - https://www.smartworld.it/feed
-  - https://rss.hwupgrade.it/news.xml
-  - https://www.tomshw.it/feed/
-  - https://www.everyeye.it/feed/notizie/
-  - https://www.wired.it/feed/tech/
-  - https://www.macitynet.it/feed/
-  - https://www.agendadigitale.eu/feed/
-  - https://www.key4biz.it/feed/
-  - https://www.cybersecurity360.it/feed/
-
-categories:
-  smartphone:
-    label: "📱 Smartphone e cellulari"
-    keywords:
-      - smartphone
-      - iphone
-      - android
-      - samsung
-      - xiaomi
-      - google pixel
-  pc:
-    label: "💻 PC e laptop"
-    keywords:
-      - laptop
-      - pc
-      - processore
-      - gpu
-      - scheda video
-  ai:
-    label: "🤖 AI"
-    keywords:
-      - ai
-      - ia
-      - chatgpt
-      - openai
-      - gemini
-  telecom:
-    label: "📶 Telecomunicazioni"
-    keywords:
-      - 5g
-      - wifi
-      - fibra ottica
-      - tim
-      - vodafone
-  informatica:
-    label: "🖥 Informatica"
-    keywords:
-      - software
-      - cybersecurity
-      - linux
-      - python
-      - cloud
-
-llama:
-  server_url: "http://127.0.0.1:8080"
-  request_timeout: 180
-```
-
-### F1 News
-
-File: `bots/f1_news/config.yaml`
-
-```yaml
-bot:
-  display_name: "F1 News Bot"
-  token: "${TELEGRAM_BOT_TOKEN}"
-
-feeds:
-  - https://www.racefans.net/feed/
-  - https://www.formula1.com/content/fom-website/en/latest-headlines.rss
-  - https://www.autosport.com/rss/f1/
-  - https://www.gpblog.com/en/rss.xml
-  - https://motorsport.uol.com.br/rss/f1/
-
-categories:
-  weekend:
-    label: "🏁 Weekend GP"
-    keywords:
-      - gran premio
-      - gp
-      - gara
-      - qualifiche
-      - sprint
-  teams:
-    label: "🏎️ Team e piloti"
-    keywords:
-      - ferrari
-      - red bull
-      - mercedes
-      - mclaren
-      - verstappen
-      - leclerc
-      - piastri
-      - hamilton
-  tech:
-    label: "⚙️ Tecnologia"
-    keywords:
-      - aerodinamica
-      - telaio
-      - motore
-      - power unit
-      - sospensioni
-  news:
-    label: "📰 Generale"
-    keywords:
-      - f1
-      - formula 1
-      - paddock
-      - pit lane
-
-llama:
-  server_url: "http://127.0.0.1:8080"
-  request_timeout: 180
-```
-
-## 7. Avvio dei bot
-
-Per il bot Tech News:
+Avvia il bot Tech News:
 
 ```sh
-source .venv/bin/activate
-BOT_PROFILE=tech_news python bot.py
-# oppure
 python run_tech_news.py
 ```
 
-Per il bot F1 News:
+Oppure avvia lo stesso entrypoint generico con il profilo Tech:
 
 ```sh
-source .venv/bin/activate
-BOT_PROFILE=f1_news python bot.py
-# oppure
+BOT_PROFILE=tech_news python bot.py
+```
+
+Avvia il bot F1 News:
+
+```sh
 python run_f1_news.py
 ```
 
-## 8. Come funziona il riassunto
+Oppure:
 
-Quando premi il pulsante per un riassunto, il bot invia una richiesta all'API compatibile OpenAI di `llama-server` su `127.0.0.1`. Il modello resta caricato tra una richiesta e l'altra, invece di essere riaperto a ogni generazione.
+```sh
+BOT_PROFILE=f1_news python bot.py
+```
 
-Il testo inviato al modello è limitato ai primi 6000 caratteri e il riassunto restituito è limitato a 600 caratteri. Se il server non è raggiungibile, il bot registra l'errore e lo segnala in chat.
+## 9. Modalità di ricezione delle notizie
 
-## 9. Struttura logica della base comune
+Quando viene richiesta una categoria:
 
-La base comune del progetto è organizzata così:
+1. il bot recupera al massimo cinque elementi per ciascun feed
+2. elimina i titoli duplicati
+3. limita il risultato a dieci notizie
+4. invia una singola notizia per messaggio Telegram
+5. associa a ogni messaggio il pulsante `Riassunto N`
+6. attende un secondo tra un messaggio e il successivo
+7. mostra infine una tastiera per scegliere un'altra categoria
 
-- `app/common/config.py`: carica il profilo attivo e i file `.env` + `config.yaml`
-- `app/feeds/source_registry.py`: espone feed e categorie del profilo
-- `app/feeds/fetcher.py`: recupera e parse RSS
-- `app/summarizer/llama_client.py`: invoca `llama-server` per riassunti in italiano
-- `app/telegram/handlers.py`: logica di Telegram, fetch dei feed, selezione delle categorie e callback dei riassunti
-- `app/telegram/keyboards.py`: pulsanti inline per Telegram
-- `app/telegram/bot.py`: bootstrap dell'ApplicationBuilder
+Le notizie vengono mantenute in `context.chat_data["last_news"]` finché resta attiva la chat. Il callback del riassunto usa l'indice nel pulsante per recuperare il contenuto corretto.
 
-Questa separazione consente di usare lo stesso codice per più bot senza duplicare la comunicazione Telegram, il filtro dei feed o il riassunto LLM.
+## 10. Come funziona il riassunto
 
-## 10. Risoluzione dei problemi
+Premendo un pulsante `Riassunto N`, il bot invia una richiesta all'API compatibile OpenAI di `llama-server` su `127.0.0.1`.
 
-- `llama-server non trovato`: esegui `sh termux/install_llama.sh` e verifica il percorso `$HOME/llama.cpp/build/bin/llama-server`.
-- `Modello GGUF non trovato`: controlla che il download sia completato e che il file si trovi in `$HOME/models/`.
-- `Errore di connessione dal bot`: avvia prima `llama-server` e verifica `/health` da un'altra sessione.
-- `Processo terminato o telefono molto lento`: chiudi le app non necessarie, riduci `LLAMA_CONTEXT_SIZE` e usa il modello 0.8B.
-- `Qualità del riassunto insufficiente`: controlla il testo fornito dal feed RSS.
-- `Token mancante`: verifica che il file `.env` nel profilo scelto esista e sia corretto.
-- `File di configurazione non trovato`: verifica che `bots/<profile>/config.yaml` sia presente.
+Il testo inviato al modello è limitato ai primi 6000 caratteri. Il riassunto restituito viene limitato a 600 caratteri e viene inviato insieme al link della notizia.
 
-## 11. Dipendenze e risorse
+Se il server non è raggiungibile, il bot registra l'errore e lo segnala in chat.
+
+## 11. Risoluzione dei problemi
+
+- `llama-server non trovato`: esegui `sh termux/install_llama.sh` e verifica il percorso `$HOME/llama.cpp/build/bin/llama-server`
+- `Modello GGUF non trovato`: controlla che il download sia terminato e che il file si trovi in `$HOME/models/`
+- `Errore di connessione dal bot`: avvia `llama-server` e verifica `/health` da un'altra sessione
+- `Token mancante`: controlla il file `.env` del profilo selezionato
+- `File di configurazione non trovato`: verifica che `bots/<profile>/config.yaml` esista
+- `Processo terminato o telefono molto lento`: chiudi app inutili, riduci `LLAMA_CONTEXT_SIZE` e usa il modello 0.8B
+- `Qualità del riassunto insufficiente`: controlla il testo presente nel feed RSS
+
+## 12. Dipendenze e risorse
 
 - Dipendenze Python: `python-telegram-bot`, `feedparser`, `python-dotenv`, `PyYAML`, `requests`
 - [llama.cpp](https://github.com/ggml-org/llama.cpp)
 - [Modello Qwen3.5-0.8B](https://huggingface.co/Qwen/Qwen3.5-0.8B)
 - [File GGUF Q4_0](https://huggingface.co/ggml-org/Qwen3.5-0.8B-GGUF)
-
-## 12. Esempio di workflow operativo
-
-1. Avvia `llama-server`
-2. Avvia il bot Tech News con la config `tech_news`
-3. Testa `/start` e scegli una categoria
-4. Verifica che i feed vengano caricati
-5. Clicca un pulsante di riassunto
-6. Controlla la qualità del riassunto
-7. Ripeti i test con il bot F1 usando il profilo `f1_news`
-
-Questo è il workflow corretto per mantenere lo stesso codice base, ma con due identità Telegram distinte e configurazioni totalmente indipendenti.

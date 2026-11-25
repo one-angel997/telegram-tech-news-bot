@@ -1,3 +1,4 @@
+import asyncio
 import re
 
 from telegram import Update
@@ -8,6 +9,11 @@ from app.feeds.fetcher import fetch_feed
 from app.feeds.source_registry import get_categories, get_feed_urls
 from app.summarizer.llama_client import summarize_text
 from app.telegram.keyboards import build_category_keyboard, build_summary_keyboard
+
+
+NEWS_SEND_DELAY_SECONDS = 1
+MAX_NEWS_PER_REQUEST = 10
+MAX_ENTRIES_PER_FEED = 5
 
 
 def normalize_title(title: str) -> str:
@@ -50,7 +56,7 @@ async def fetch_news(category_id: str = "all"):
 
     for feed_url in get_feed_urls():
         feed = fetch_feed(feed_url)
-        for item in feed.entries[:5]:
+        for item in feed.entries[:MAX_ENTRIES_PER_FEED]:
             if category_id != "all" and not matches_category(item, category_id, categories):
                 continue
 
@@ -66,7 +72,7 @@ async def fetch_news(category_id: str = "all"):
             if "content" in item:
                 try:
                     content = item.content[0].value
-                except Exception:
+                except (AttributeError, IndexError, KeyError, TypeError):
                     pass
 
             entries.append({
@@ -75,7 +81,7 @@ async def fetch_news(category_id: str = "all"):
                 "content": clean_summary(content),
             })
 
-    return entries[:10]
+    return entries[:MAX_NEWS_PER_REQUEST]
 
 
 async def list_news(update: Update, context, category_id: str = "all"):
@@ -93,20 +99,32 @@ async def list_news(update: Update, context, category_id: str = "all"):
     entries = await fetch_news(category_id)
     if not entries:
         await update.effective_message.reply_text(
-            "Non ho trovato notizie per questa categoria al momento."
+            f"Non ho trovato notizie per {category_name} al momento.",
+            reply_markup=build_category_keyboard(categories),
         )
         return
 
     context.chat_data["last_news"] = entries
 
-    lines = []
+    # Invia una notizia per messaggio, ciascuna con il proprio pulsante riassunto.
+    # La pausa riduce il rischio di superare i limiti di invio di Telegram.
     for index, entry in enumerate(entries):
-        lines.append(f"{index + 1}. {entry['title']}\n{entry['link']}")
+        if index:
+            await asyncio.sleep(NEWS_SEND_DELAY_SECONDS)
 
-    message = "\n\n".join(lines)
+        text = f"📰 {index + 1}. {entry['title']}"
+        if entry["link"]:
+            text += f"\n{entry['link']}"
+
+        await update.effective_message.reply_text(
+            text,
+            reply_markup=build_summary_keyboard(index),
+        )
+
+    await asyncio.sleep(NEWS_SEND_DELAY_SECONDS)
     await update.effective_message.reply_text(
-        f"📰 Notizie: {category_name}\n\n{message}",
-        reply_markup=build_summary_keyboard(entries),
+        "Scegli un'altra categoria per continuare:",
+        reply_markup=build_category_keyboard(categories),
     )
 
 

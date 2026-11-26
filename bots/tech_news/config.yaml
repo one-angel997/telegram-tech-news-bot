@@ -19,43 +19,170 @@ categories:
     label: "📱 Smartphone e cellulari"
     keywords:
       - smartphone
+      - cellulare
+      - telefonino
       - iphone
       - android
       - samsung
+      - samsung galaxy
+      - galaxy s
+      - galaxy a
+      - galaxy z
+      - galaxy fold
+      - galaxy flip
+      - galaxy note
       - xiaomi
+      - redmi
+      - poco
       - google pixel
+      - pixel
+      - oneplus
+      - oppo
+      - vivo
+      - realme
+      - motorola
+      - moto g
+      - huawei
+      - honor
+      - nothing phone
+      - sony xperia
+      - nokia
+      - asus zenfone
+      - fairphone
+      - foldable
+      - pieghevole
+      - REDMAGIC
+      - nubia
   pc:
     label: "💻 PC e laptop"
     keywords:
       - laptop
+      - notebook
       - pc
+      - computer
       - processore
-      - gpu
+      - cpu
       - scheda video
+      - gpu
+      - desktop
+      - macbook
+      - workstation
+      - scheda madre
+      - ram
+      - ssd
+      - windows
+      - windows 11
+      - OS
   ai:
-    label: "🤖 AI"
+    label: "🤖 AI e affini"
     keywords:
       - ai
       - ia
+      - intelligenza artificiale
+      - machine learning
+      - deep learning
+      - generative ai
       - chatgpt
       - openai
       - gemini
+      - copilot
+      - llm
+      - anthropic
+      - claude
+      - mistral
+      - le chat
+      - meta ai
+      - llama
+      - xai
+      - grok
+      - deepseek
+      - perplexity
+      - cohere
+      - hugging face
+      - stability ai
+      - midjourney
+      - runway ai
+      - jev
+      - skill
+      - prompt
+      - token
   telecom:
     label: "📶 Telecomunicazioni"
     keywords:
+      - telecomunicazioni
+      - telefonia
       - 5g
-      - wifi
+      - 6g
       - fibra ottica
+      - banda larga
+      - wifi
+      - wi-fi
+      - rete mobile
+      - rete fissa
+      - operatore telefonico
+      - operatore mobile
+      - router
+      - modem
+      - satellite
+      - satellitare
+      - comunicazioni satellitari
+      - navigazione satellitare
+      - galileo
+      - gnss
+      - gps
+      - leonardo
+      - telespazio
+      - thales alenia space
+      - starlink
+      - eutelsat
+      - oneweb
+      - iris2
+      - esa
       - tim
       - vodafone
+      - windtre
+      - iliad
+      - fastweb
+      - open fiber
+      - fibercop
+      - Bluetooth
+      - sim
+      - esim
   informatica:
     label: "🖥 Informatica"
     keywords:
       - software
       - cybersecurity
-      - linux
-      - python
+      - sicurezza informatica
+      - database
       - cloud
+      - windows
+      - linux
+      - applicazione
+      - programmazione
+      - linguaggio di programmazione
+      - internet
+      - videogioco
+      - .net
+      - c#
+      - c++
+      - python
+      - java
+      - javascript
+      - typescript
+      - golang
+      - rust
+      - php
+      - ruby
+      - swift
+      - kotlin
+      - sql
+      - powershell
+      - visual basic
+      - vb.net
+      - asp.net
+      - react
+      - node.js
 
 llama:
   server_url: "http://127.0.0.1:8080"

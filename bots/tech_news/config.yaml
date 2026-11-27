@@ -3,20 +3,19 @@ bot:
   token: "${TELEGRAM_BOT_TOKEN}"
 
 feeds:
-  - https://www.hdblog.it/rss/
-  - https://www.smartworld.it/feed
-  - https://rss.hwupgrade.it/news.xml
-  - https://www.tomshw.it/feed/
-  - https://www.everyeye.it/feed/notizie/
-  - https://www.wired.it/feed/tech/
-  - https://www.macitynet.it/feed/
-  - https://www.agendadigitale.eu/feed/
-  - https://www.key4biz.it/feed/
-  - https://www.cybersecurity360.it/feed/
+  generic:
+    - https://www.hdblog.it/rss/
+    - https://www.smartworld.it/feed/
+    - https://rss.hwupgrade.it/news.xml
+    - https://www.tomshw.it/feed/
+    - https://www.everyeye.it/feed/notizie/
+    - https://www.wired.it/feed/tech/
 
 categories:
   smartphone:
     label: "📱 Smartphone e cellulari"
+    feeds:
+      - https://www.macitynet.it/feed/
     keywords:
       - smartphone
       - cellulare
@@ -55,6 +54,8 @@ categories:
       - nubia
   pc:
     label: "💻 PC e laptop"
+    feeds:
+      - https://www.dday.it/feed
     keywords:
       - laptop
       - notebook
@@ -75,6 +76,10 @@ categories:
       - OS
   ai:
     label: "🤖 AI e affini"
+    feeds:
+      - https://ainews.it/feed/
+      - https://www.rivista.ai/feed/
+      - https://www.ai4business.it/feed/
     keywords:
       - ai
       - ia
@@ -108,6 +113,10 @@ categories:
       - token
   telecom:
     label: "📶 Telecomunicazioni"
+    feeds:
+      - https://www.corrierecomunicazioni.it/feed/
+      - https://www.agendadigitale.eu/feed/
+      - https://www.key4biz.it/feed/
     keywords:
       - telecomunicazioni
       - telefonia
@@ -150,6 +159,10 @@ categories:
       - esim
   informatica:
     label: "🖥 Informatica"
+    feeds:
+      - https://www.cybersecurity360.it/feed/
+      - https://www.punto-informatico.it/feed/
+      - https://www.ictsecuritymagazine.com/feed/
     keywords:
       - software
       - cybersecurity

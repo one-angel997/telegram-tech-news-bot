@@ -6,7 +6,12 @@ from telegram import Update
 from app.common.config import get_config
 from app.common.logging import logger
 from app.feeds.fetcher import fetch_feed
-from app.feeds.source_registry import get_categories, get_feed_urls
+from app.feeds.source_registry import (
+    get_categories,
+    get_category_feed_urls,
+    get_feed_urls,
+    get_generic_feed_urls,
+)
 from app.summarizer.llama_client import summarize_text
 from app.telegram.keyboards import build_category_keyboard, build_summary_keyboard
 
@@ -53,11 +58,20 @@ async def fetch_news(category_id: str = "all"):
     entries = []
     seen = set()
     categories = get_categories()
+    generic_urls = set(get_generic_feed_urls())
+    specialist_urls = set(get_category_feed_urls(category_id))
 
-    for feed_url in get_feed_urls():
+    for feed_url in get_feed_urls(category_id):
         feed = fetch_feed(feed_url)
         for item in feed.entries[:MAX_ENTRIES_PER_FEED]:
-            if category_id != "all" and not matches_category(item, category_id, categories):
+            # Use keywords to classify articles from shared feeds. Specialist feeds
+            # are already selected for this category, so keep their relevant entries
+            # even when the publisher's wording omits a configured keyword.
+            if (
+                category_id != "all"
+                and feed_url in generic_urls
+                and not matches_category(item, category_id, categories)
+            ):
                 continue
 
             title = item.get("title") or "Senza titolo"
